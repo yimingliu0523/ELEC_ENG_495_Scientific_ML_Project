@@ -1,0 +1,33 @@
+﻿seed: 7
+device: cpu
+dataset_path: results/data/processed/lorenz_dataset.npz
+total_time: 25.0
+num_trajectories: 12
+rollout_horizon: 100
+noise_levels: [0.0, 0.01, 0.05]
+dt_values: [0.01, 0.02]
+system:
+  sigma: 10.0
+  rho: 28.0
+  beta: 2.6666666666666665
+initial_condition_ranges:
+  x: [-15.0, 15.0]
+  y: [-20.0, 20.0]
+  z: [5.0, 35.0]
+figure_dir: results/figures
+log_dir: results/logs
+table_dir: results/tables
+report_asset_dir: results/report_assets
+models:
+  mlp:
+    checkpoint: results/checkpoints/mlp_best.pt
+    train_config: configs/train_mlp.yaml
+    training_summary: results/checkpoints/mlp_train_summary.json
+  resnet:
+    checkpoint: results/checkpoints/resnet_best.pt
+    train_config: configs/train_resnet.yaml
+    training_summary: results/checkpoints/resnet_train_summary.json
+  neural_ode:
+    checkpoint: results/checkpoints/neural_ode_best.pt
+    train_config: configs/train_neural_ode.yaml
+    training_summary: results/checkpoints/neural_ode_train_summary.json

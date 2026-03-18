@@ -1,0 +1,27 @@
+﻿seed: 7
+device: cpu
+data_config: configs/data_default.yaml
+dataset_path: results/data/processed/lorenz_dataset.npz
+batch_size: 1024
+num_eval_trajectories: 10
+horizons: [10, 50, 100, 500, 1000]
+figure_dir: results/figures
+log_dir: results/logs
+table_dir: results/tables
+report_asset_dir: results/report_assets
+models:
+  mlp:
+    checkpoint: results/checkpoints/mlp_best.pt
+    train_config: configs/train_mlp.yaml
+    training_summary: results/checkpoints/mlp_train_summary.json
+    notes: Direct one-step state prediction baseline.
+  resnet:
+    checkpoint: results/checkpoints/resnet_best.pt
+    train_config: configs/train_resnet.yaml
+    training_summary: results/checkpoints/resnet_train_summary.json
+    notes: Residual increment predictor.
+  neural_ode:
+    checkpoint: results/checkpoints/neural_ode_best.pt
+    train_config: configs/train_neural_ode.yaml
+    training_summary: results/checkpoints/neural_ode_train_summary.json
+    notes: Continuous-time vector-field learner.

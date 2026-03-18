@@ -1,0 +1,23 @@
+﻿seed: 7
+device: cpu
+data:
+  dataset_path: results/data/processed/lorenz_dataset.npz
+model:
+  name: neural_ode
+  state_dim: 3
+  hidden_dims: [128, 128]
+  activation: tanh
+  solver: rk4
+training:
+  batch_size: 128
+  epochs: 25
+  learning_rate: 0.001
+  weight_decay: 0.000001
+  segment_length: 25
+  segment_stride: 5
+  normalize: true
+  sample_rollout_horizon: 300
+  num_workers: 0
+output:
+  checkpoint_dir: results/checkpoints
+  figure_dir: results/figures

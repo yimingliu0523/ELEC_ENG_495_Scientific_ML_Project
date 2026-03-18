@@ -1,0 +1,22 @@
+﻿seed: 7
+device: cpu
+data:
+  dataset_path: results/data/processed/lorenz_dataset.npz
+model:
+  name: mlp
+  state_dim: 3
+  history_steps: 1
+  hidden_dims: [128, 128, 128]
+  activation: relu
+training:
+  batch_size: 256
+  epochs: 30
+  learning_rate: 0.001
+  weight_decay: 0.000001
+  prediction_horizon: 1
+  normalize: true
+  sample_rollout_horizon: 300
+  num_workers: 0
+output:
+  checkpoint_dir: results/checkpoints
+  figure_dir: results/figures

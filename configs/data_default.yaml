@@ -1,0 +1,18 @@
+﻿seed: 7
+system:
+  sigma: 10.0
+  rho: 28.0
+  beta: 2.6666666666666665
+data:
+  train_trajectories: 100
+  val_trajectories: 20
+  test_trajectories: 20
+  total_time: 25.0
+  dt: 0.01
+  solver: rk4
+  noise_std: 0.0
+  initial_condition_ranges:
+    x: [-15.0, 15.0]
+    y: [-20.0, 20.0]
+    z: [5.0, 35.0]
+output_root: results/data

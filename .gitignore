@@ -1,0 +1,40 @@
+.pytest_cache/
+__pycache__/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+.venv/
+env/
+venv/
+build/
+dist/
+*.egg-info/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.tmp
+*.swp
+*.aux
+*.out
+*.toc
+
+# Local editor state
+.DS_Store
+.idea/
+.vscode/
+
+# Experiment outputs
+results/checkpoints/*
+results/logs/*
+results/data/raw/*
+results/data/processed/*
+
+# Keep output folders tracked
+!results/checkpoints/.gitkeep
+!results/logs/.gitkeep
+!results/figures/.gitkeep
+!results/tables/.gitkeep
+!results/report_assets/.gitkeep
+!results/data/raw/.gitkeep
+!results/data/processed/.gitkeep

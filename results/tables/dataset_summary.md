@@ -1,0 +1,5 @@
+| split | num_trajectories | dt | trajectory_length | noise_level |
+| --- | --- | --- | --- | --- |
+| train | 100 | 0.01 | 2501 | 0.0 |
+| val | 20 | 0.01 | 2501 | 0.0 |
+| test | 20 | 0.01 | 2501 | 0.0 |
