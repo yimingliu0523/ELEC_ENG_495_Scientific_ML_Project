@@ -1,4 +1,4 @@
-﻿"""Time-series and sensitivity plots for Lorenz trajectories."""
+"""Time-series and sensitivity plots for Lorenz trajectories."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from src.dynamics.dataset_generation import build_time_grid
 from src.dynamics.lorenz import get_default_lorenz_params
 from src.dynamics.simulation import generate_single_trajectory
 from src.utils.io import ensure_dir
-from src.utils.plotting import save_figure, set_plot_style
+from src.utils.plotting import annotate_subplots, save_figure, set_plot_style
 
 
 STATE_LABELS = ["x(t)", "y(t)", "z(t)"]
@@ -20,10 +20,12 @@ STATE_LABELS = ["x(t)", "y(t)", "z(t)"]
 def plot_time_series(time_grid: np.ndarray, trajectory: np.ndarray, output_path: str, title: str = "Lorenz trajectory time series") -> None:
     set_plot_style()
     fig, axes = plt.subplots(3, 1, figsize=(10, 7), sharex=True)
+    fig.subplots_adjust(top=0.90, bottom=0.11, hspace=0.38)
     for idx, ax in enumerate(axes):
         ax.plot(time_grid, trajectory[:, idx], linewidth=1.2)
         ax.set_ylabel(STATE_LABELS[idx])
-    axes[-1].set_xlabel("Time")
+    annotate_subplots(axes, y=-0.06)
+    axes[-1].set_xlabel("Time", labelpad=14)
     fig.suptitle(title)
     save_figure(fig, output_path, tight=False)
     plt.close(fig)
@@ -38,12 +40,14 @@ def plot_time_series_comparison(
 ) -> None:
     set_plot_style()
     fig, axes = plt.subplots(3, 1, figsize=(10, 7), sharex=True)
+    fig.subplots_adjust(top=0.90, bottom=0.11, hspace=0.38)
     for idx, ax in enumerate(axes):
         ax.plot(time_grid, true_trajectory[:, idx], label="True", linewidth=1.5)
         ax.plot(time_grid, predicted_trajectory[:, idx], label="Predicted", linewidth=1.2, linestyle="--")
         ax.set_ylabel(STATE_LABELS[idx])
+    annotate_subplots(axes, y=-0.06)
     axes[0].legend(loc="upper right")
-    axes[-1].set_xlabel("Time")
+    axes[-1].set_xlabel("Time", labelpad=14)
     fig.suptitle(title)
     save_figure(fig, output_path, tight=False)
     plt.close(fig)
@@ -59,13 +63,15 @@ def plot_sensitivity_to_initial_conditions(
     set_plot_style()
     divergence = np.linalg.norm(trajectory_a - trajectory_b, axis=-1)
     fig, axes = plt.subplots(2, 1, figsize=(9, 6), sharex=True)
+    fig.subplots_adjust(top=0.88, bottom=0.11, hspace=0.35)
     axes[0].plot(time_grid, trajectory_a[:, 0], label="Trajectory A")
     axes[0].plot(time_grid, trajectory_b[:, 0], label="Trajectory B", linestyle="--")
     axes[0].set_ylabel("x(t)")
     axes[0].legend(loc="upper right")
     axes[1].plot(time_grid, divergence, color="#9a031e")
     axes[1].set_ylabel("State distance")
-    axes[1].set_xlabel("Time")
+    annotate_subplots(axes, y=-0.06)
+    axes[1].set_xlabel("Time", labelpad=14)
     fig.suptitle(title)
     save_figure(fig, output_path, tight=False)
     plt.close(fig)

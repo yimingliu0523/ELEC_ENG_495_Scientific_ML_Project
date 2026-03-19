@@ -1,11 +1,11 @@
-﻿"""Phase portrait visualizations."""
+"""Phase portrait visualizations."""
 
 from __future__ import annotations
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-from src.utils.plotting import save_figure, set_plot_style
+from src.utils.plotting import annotate_subplots, save_figure, set_plot_style
 
 
 PROJECTIONS = [((0, 1), "x", "y"), ((0, 2), "x", "z"), ((1, 2), "y", "z")]
@@ -19,6 +19,7 @@ def plot_phase_portraits(
 ) -> None:
     set_plot_style()
     fig, axes = plt.subplots(1, 3, figsize=(14, 4))
+    fig.subplots_adjust(top=0.82, bottom=0.22, wspace=0.30)
     for ax, (axes_idx, xlabel, ylabel) in zip(axes, PROJECTIONS):
         ax.plot(true_states[:, axes_idx[0]], true_states[:, axes_idx[1]], label="True", linewidth=1.2)
         ax.plot(
@@ -30,6 +31,7 @@ def plot_phase_portraits(
         )
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
+    annotate_subplots(axes, y=-0.27)
     axes[0].legend(loc="upper right")
     fig.suptitle(title)
     save_figure(fig, output_path, tight=False)

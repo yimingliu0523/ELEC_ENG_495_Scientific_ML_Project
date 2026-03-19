@@ -1,4 +1,4 @@
-﻿"""Compare trained Lorenz models using saved evaluation summaries."""
+"""Compare trained Lorenz models using saved evaluation summaries."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ import pandas as pd
 
 from src.utils.config import load_config
 from src.utils.io import ensure_dir, load_json, write_markdown_table
+from src.utils.plotting import annotate_subplots, save_figure, set_plot_style
 from src.visualization.plot_error_curves import plot_error_growth_curve
 
 
@@ -74,16 +75,18 @@ def compare_models(config_path: str) -> dict[str, Path]:
         title="Error growth across learned models",
     )
 
+    set_plot_style()
     fig, axes = plt.subplots(1, 3, figsize=(12, 4))
+    fig.subplots_adjust(top=0.85, bottom=0.22, wspace=0.32)
     metrics = ["one_step_mse", "rollout_rmse_100", "attractor_density_distance"]
     titles = ["One-step MSE", "Rollout RMSE (100)", "Attractor density distance"]
     for ax, metric, title in zip(axes, metrics, titles):
         ax.bar(evaluation_df["model"], evaluation_df[metric], color=["#0f4c5c", "#e36414", "#6a994e"])
         ax.set_title(title)
         ax.tick_params(axis="x", rotation=20)
-    fig.tight_layout()
+    annotate_subplots(axes, y=-0.25)
     summary_figure = figure_dir / "figure_final_summary.png"
-    fig.savefig(summary_figure, bbox_inches="tight", dpi=250)
+    save_figure(fig, summary_figure, tight=False)
     plt.close(fig)
 
     for path in [evaluation_csv, evaluation_md, model_csv, model_md, figure_dir / "figure_error_growth_all_models.png", summary_figure]:

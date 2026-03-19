@@ -1,11 +1,11 @@
-﻿"""Attractor visualizations for Lorenz trajectories and learned rollouts."""
+"""Attractor visualizations for Lorenz trajectories and learned rollouts."""
 
 from __future__ import annotations
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-from src.utils.plotting import save_figure, set_plot_style
+from src.utils.plotting import annotate_subplots, save_figure, set_plot_style
 
 
 def plot_reference_attractor(
@@ -33,6 +33,7 @@ def plot_attractor_projections(
 ) -> None:
     set_plot_style()
     fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+    fig.subplots_adjust(top=0.82, bottom=0.22, wspace=0.28)
     projections = [((0, 1), "x", "y"), ((0, 2), "x", "z")]
     for ax, (axes_idx, xlabel, ylabel) in zip(axes, projections):
         ax.plot(true_states[:, axes_idx[0]], true_states[:, axes_idx[1]], label="True", linewidth=1.0)
@@ -45,6 +46,7 @@ def plot_attractor_projections(
         )
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
+    annotate_subplots(axes, y=-0.25)
     axes[0].legend(loc="upper right")
     fig.suptitle(title)
     save_figure(fig, output_path, tight=False)

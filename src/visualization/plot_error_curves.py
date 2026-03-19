@@ -1,4 +1,4 @@
-﻿"""Error-curve and summary plotting utilities."""
+"""Error-curve and summary plotting utilities."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from src.utils.plotting import save_figure, set_plot_style
+from src.utils.plotting import annotate_subplots, save_figure, set_plot_style
 
 
 STATE_NAMES = ["x", "y", "z"]
@@ -38,6 +38,7 @@ def plot_one_step_scatter(
 ) -> None:
     set_plot_style()
     fig, axes = plt.subplots(1, 3, figsize=(13, 4))
+    fig.subplots_adjust(top=0.82, bottom=0.22, wspace=0.32)
     for idx, ax in enumerate(axes):
         ax.scatter(true_states[:, idx], predicted_states[:, idx], s=6, alpha=0.35)
         min_val = min(true_states[:, idx].min(), predicted_states[:, idx].min())
@@ -45,6 +46,7 @@ def plot_one_step_scatter(
         ax.plot([min_val, max_val], [min_val, max_val], color="black", linewidth=1.0)
         ax.set_xlabel(f"True {STATE_NAMES[idx]}")
         ax.set_ylabel(f"Predicted {STATE_NAMES[idx]}")
+    annotate_subplots(axes, y=-0.28)
     fig.suptitle(title)
     save_figure(fig, output_path, tight=False)
     plt.close(fig)

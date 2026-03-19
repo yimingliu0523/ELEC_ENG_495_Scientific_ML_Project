@@ -1,13 +1,16 @@
 \documentclass[conference]{IEEEtran}
-\IEEEoverridecommandlockouts
 
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
 \usepackage{booktabs}
-\usepackage{array}
-\usepackage{hyperref}
 
-\title{Learning Chaotic Continuous-Time Dynamics on the Lorenz System: Numerical Simulation, Short-Horizon Forecasting, and Attractor Reconstruction}
+\setlength{\textfloatsep}{5pt plus 1pt minus 2pt}
+\setlength{\floatsep}{5pt plus 1pt minus 2pt}
+\setlength{\intextsep}{5pt plus 1pt minus 2pt}
+\setlength{\abovedisplayskip}{4pt}
+\setlength{\belowdisplayskip}{4pt}
+
+\title{Learning Chaotic Dynamics on the Lorenz System}
 
 \author{
 \IEEEauthorblockN{Scientific Machine Learning Course Project}
@@ -17,72 +20,71 @@
 \maketitle
 
 \begin{abstract}
-Chaotic continuous-time systems are a demanding benchmark for Scientific Machine Learning because strong local prediction does not guarantee correct long-term dynamics. We study this issue on the Lorenz system by comparing classical numerical simulation, a one-step multilayer perceptron (MLP), a residual discrete-time predictor, and a Neural ODE. The residual model achieves the best one-step mean-squared error, while the Neural ODE achieves the best rollout RMSE at horizons 50, 100, and 500. The experiments show that evaluating chaotic dynamics requires both local predictive accuracy and global dynamical fidelity through rollout behavior and attractor reconstruction.
+We study forecasting and dynamical reconstruction on the chaotic Lorenz system using three learned models: an MLP one-step predictor, a residual discrete-time predictor, and a Neural ODE. The residual model achieves the best one-step mean-squared error, while the Neural ODE achieves the best rollout RMSE at horizons 50, 100, and 500 and the strongest robustness under perturbation. The experiments show that chaotic systems should be judged not only by local prediction error, but also by rollout behavior, attractor structure, and sensitivity to numerical discretization.
 \end{abstract}
 
 \section{Introduction}
-Scientific Machine Learning (SciML) is especially compelling when machine learning is used to approximate the behavior of a known physical or mathematical dynamical system. In this project, we use the Lorenz equations as a benchmark because they are low-dimensional, visually interpretable, and chaotic under the standard parameter choice. This makes them ideal for showing a central issue in learning dynamical systems: a model can perform well on one-step supervised prediction while still failing to preserve the correct long-term geometry.
-
-Our goal is to compare three learning paradigms on the same reproducible pipeline:
-\begin{enumerate}
-\item a discrete-time MLP next-state predictor,
-\item a residual discrete-time model that predicts state increments,
-\item a Neural ODE that learns a continuous-time vector field.
-\end{enumerate}
-
-The main question is not only which model predicts best locally, but which model best reflects the underlying dynamics over rollout horizons and attractor-level diagnostics.
-
-\section{Lorenz System and Dataset}
-We study
+Scientific Machine Learning (SciML) combines numerical modeling and machine learning for systems governed by scientific structure. The Lorenz equations provide a compact benchmark:
 \begin{equation}
-\dot{x} = \sigma (y-x), \qquad
-\dot{y} = x(\rho-z)-y, \qquad
-\dot{z} = xy - \beta z
+\dot{x}=\sigma(y-x),\quad
+\dot{y}=x(\rho-z)-y,\quad
+\dot{z}=xy-\beta z,
+\label{eq:lorenz}
 \end{equation}
-with $(\sigma,\rho,\beta)=(10,28,8/3)$. The state is $s(t)=[x(t),y(t),z(t)]^\top$. Under this parameter setting, nearby trajectories diverge rapidly while remaining confined to the butterfly-shaped attractor.
+with $(\sigma,\rho,\beta)=(10,28,8/3)$. Writing $s(t)=[x(t),y(t),z(t)]^\top$, the system has the vector-field form $\dot{s}(t)=f(s(t))$. The nonzero equilibria
+\begin{equation}
+s_\pm=\left(\pm\sqrt{\beta(\rho-1)},\ \pm\sqrt{\beta(\rho-1)},\ \rho-1\right)
+\end{equation}
+are unstable under the standard parameter setting, which contributes to the classical butterfly attractor and the sensitivity to initial conditions. The corresponding discrete flow map is $s_{t+\Delta t}=\Phi_{\Delta t}(s_t)$, so the central learning question is whether a model can approximate either the map $\Phi_{\Delta t}$ or the vector field $f$ while preserving meaningful long-horizon dynamics.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{results/report_assets/figure_true_attractor.png}
-\caption{Reference Lorenz attractor under the standard chaotic parameter setting.}
-\label{fig:lorenz_attractor}
+\includegraphics[width=0.94\columnwidth]{results/report_assets/figure_true_attractor.png}
+\caption{Reference Lorenz attractor.}
+\label{fig:attractor}
 \end{figure}
 
-Reference trajectories were generated with a fixed-step RK4 solver. The default dataset contains 100 training trajectories, 20 validation trajectories, and 20 test trajectories, each simulated over $T=25$ with $\Delta t=0.01$. Splits were made by trajectory rather than by individual time points to avoid temporal leakage.
+The key challenge is that low one-step error does not guarantee faithful long-horizon behavior. This motivates the three evaluation goals of the project: short-horizon forecasting, rollout stability, and attractor reconstruction. For chaotic systems, even reasonable models diverge pointwise over time, so evaluation must distinguish short-horizon accuracy from qualitative dynamical fidelity.
 
-\section{Models}
-\subsection{Discrete-Time Baselines}
-The MLP baseline learns a map from $s_t$ to $s_{t+1}$. During rollout, its own predictions are recursively fed back as inputs. The residual model instead learns a state increment $\Delta s_t$ and predicts
+\section{Method}
+Reference trajectories were generated by fixed-step RK4 integration and split by trajectory into 100 training, 20 validation, and 20 test trajectories. Each trajectory was simulated over $T=25$ with default step size $\Delta t=0.01$.
+
+We compare three models. The MLP directly predicts $s_{t+1}$ and serves as the simplest baseline. The residual model predicts an increment and uses
 \begin{equation}
-s_{t+1} \approx s_t + \Delta s_t.
+s_{t+1}\approx s_t+\Delta s_t,
 \end{equation}
-This parameterization is often better aligned with discretized dynamics.
+which is consistent with the first-order numerical structure $s_{t+\Delta t}\approx s_t+\Delta t\,f(s_t)$. The Neural ODE instead learns a continuous vector field $f_\theta$ and obtains trajectories by integrating $\dot{s}=f_\theta(s)$, making it the model most closely matched to the original continuous-time formulation.
 
-\subsection{Neural ODE}
-The Neural ODE learns a continuous-time vector field
-\begin{equation}
-\dot{s} = f_\theta(s),
-\end{equation}
-where $f_\theta$ is represented by a neural network. Predicted trajectories are obtained by numerically integrating the learned vector field. This is the most explicitly SciML component of the project because the model structure mirrors the original scientific formulation.
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.94\columnwidth]{results/report_assets/figure_solver_comparison.png}
+\caption{RK4 step-size comparison on $x(t)$.}
+\label{fig:solver}
+\end{figure}
 
-\section{Evaluation Protocol}
-Chaotic forecasting should not be judged by one metric alone. We therefore evaluate:
-\begin{itemize}
-\item one-step MSE and MAE,
-\item rollout RMSE at horizons 50, 100, and 500,
-\item attractor occupancy similarity through a coarse density distance,
-\item qualitative phase portraits and attractor projections,
-\item robustness under observation noise and time-step shifts.
-\end{itemize}
+We evaluate one-step MSE, rollout RMSE at horizons 50, 100, and 500, attractor-level similarity, and robustness to step-size and noise perturbations. Figure~\ref{fig:solver} shows that even the same ODE produces visibly different long-time trajectories when the numerical step size changes, which motivates careful simulation and robustness analysis.
 
-This protocol distinguishes local predictive accuracy from global dynamical fidelity.
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.47\textwidth]{results/report_assets/figure_resnet_one_step.png}
+\hfill
+\includegraphics[width=0.47\textwidth]{results/report_assets/figure_final_summary.png}
+
+\vspace{3pt}
+
+\includegraphics[width=0.47\textwidth]{results/report_assets/figure_error_growth_all_models.png}
+\hfill
+\includegraphics[width=0.47\textwidth]{results/report_assets/figure_neural_ode_attractor_projections.png}
+\caption{Top-left: ResNet one-step prediction quality. Top-right: compact overall metric summary. Bottom-left: rollout error growth across models. Bottom-right: Neural ODE attractor reconstruction.}
+\label{fig:results_overview}
+\end{figure*}
 
 \section{Results}
-Table~\ref{tab:main_results} summarizes the main quantitative outcomes. The residual predictor achieved the best one-step MSE, showing that increment prediction is a strong local parameterization for the Lorenz flow map. However, the Neural ODE achieved the lowest rollout RMSE at horizons 50, 100, and 500, which indicates better short- and medium-horizon behavior. This difference is exactly the SciML point of the project: the best one-step learner is not necessarily the best dynamical model.
+Table~\ref{tab:results} summarizes the main quantitative results. The residual predictor achieved the best one-step MSE, confirming that increment prediction is an effective local parameterization. However, the Neural ODE achieved the lowest rollout RMSE at all reported horizons, so the best local predictor was not the best dynamical model.
 
 \begin{table}[t]
-\caption{Main test metrics on the Lorenz benchmark.}
-\label{tab:main_results}
+\caption{Main test metrics.}
+\label{tab:results}
 \centering
 \footnotesize
 \begin{tabular}{lcccc}
@@ -96,32 +98,15 @@ Neural ODE & $2.18{\times}10^{-4}$ & \textbf{0.438} & \textbf{0.622} & \textbf{6
 \end{tabular}
 \end{table}
 
-The direct MLP learned accurate local transitions but showed weaker recursive rollout performance than the structured alternatives. The residual model dramatically improved one-step accuracy and remained competitive on short rollouts. The Neural ODE, while not the strongest one-step predictor, most consistently matched continuous-time behavior under rollout evaluation.
+The one-step prediction results already show a clear separation between models. The MLP learned accurate one-step transitions, but the residual model improved local accuracy substantially and produced the best one-step metric overall.
 
-Training cost also reflected the added structure. The MLP and residual models each used 33,923 trainable parameters, whereas the Neural ODE used 17,411 parameters but took longer to train because each forward pass involved numerical integration. In our experiments, approximate training times were 12.7 minutes for the MLP, 20.2 minutes for the residual model, and 24.7 minutes for the Neural ODE.
+Figure~\ref{fig:results_overview} summarizes the full story. The top-left panel shows that predicted and true values lie almost exactly on the diagonal for the best one-step model, illustrating how strong short-horizon prediction can look in a chaotic system. The top-right panel places that result in context: ResNet is strongest on one-step prediction, while the Neural ODE becomes more favorable once rollout and dynamical fidelity are considered.
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{results/report_assets/figure_error_growth_all_models.png}
-\caption{Rollout error growth across the learned models. The Neural ODE remains best over the evaluated horizons even though it is not the best one-step predictor.}
-\label{fig:error_growth}
-\end{figure}
+The bottom-left panel makes the short-horizon versus long-horizon distinction clear. The residual model is strongest locally, but the Neural ODE accumulates error more slowly over the evaluated horizon. The bottom-right panel adds the attractor perspective: the Neural ODE preserves the two-lobe geometry of the Lorenz attractor even when pointwise trajectories are no longer identical. Attractor-density comparisons showed the same pattern, and additional robustness experiments under step-size shift and observation noise also favored the Neural ODE.
 
-Qualitative figures supported the same interpretation. All models eventually deviated from exact test trajectories, which is expected under chaos. However, the residual model and Neural ODE recovered the butterfly geometry more faithfully than the plain MLP. This is why attractor reconstruction and phase portraits are more meaningful long-horizon diagnostics than pointwise tracking alone. Figure~\ref{fig:error_growth} makes the same point quantitatively: short-horizon differences are modest, but dynamical quality separates more clearly as the rollout length increases.
+\section{Discussion}
+This experiment illustrates a central SciML lesson. For chaotic systems, exact long-horizon tracking is not the only criterion, and often not the right one. What matters is whether the learned model reproduces useful dynamical structure: stable short-rollout behavior, reasonable phase portraits, and attractor geometry.
 
-\section{SciML Interpretation}
-This project is a SciML study, not just a standard forecasting benchmark, for three reasons. First, the target system is a scientific continuous-time ODE. Second, the learning pipeline is grounded in numerical simulation rather than arbitrary tabular data. Third, the evaluation is dynamical: the learned models are judged by rollout behavior, attractor structure, and robustness, not only by one-step loss.
-
-The Neural ODE is the clearest example of this perspective. It learns a vector field directly and uses integration during both training and inference. Even though it does not produce the best one-step MSE, it provides the strongest rollout RMSE and naturally supports step-size-sensitive reasoning.
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{results/report_assets/figure_final_summary.png}
-\caption{Compact summary of one-step, rollout, and attractor-level comparisons across the three learned models.}
-\label{fig:final_summary}
-\end{figure}
-
-\section{Conclusion}
-The Lorenz benchmark clearly demonstrates that one-step prediction can be misleading for chaotic systems. The residual predictor was best for local forecasting, but the Neural ODE was best for rollout accuracy over the tested horizons and better aligned with the continuous-time nature of the problem. The main lesson is that learned chaotic dynamics should be evaluated with both predictive and dynamical criteria. As summarized in Fig.~\ref{fig:final_summary}, preserving the qualitative geometry of the system is as important as minimizing immediate prediction error.
+The residual model is best when the task is framed as discrete next-step regression, whereas the Neural ODE is best when the goal is to respect the underlying continuous-time dynamics over rollout horizons and under perturbation. As summarized in Fig.~\ref{fig:results_overview}, the Lorenz benchmark shows why SciML should combine numerical simulation, machine learning, and dynamical evaluation rather than relying on one-step prediction alone.
 
 \end{document}
